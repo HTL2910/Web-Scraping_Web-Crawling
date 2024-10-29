@@ -6,7 +6,7 @@ from os.path import basename
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 import email.utils
-
+import pandas as pd
 
 api_url='https://remoteok.com/api/'
 user_agent='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
@@ -35,8 +35,10 @@ def output_job_to_excel(data):
     wb.save('remoteok_data.xls')
     
 def scrap(start,end):
-    json=get_job_posting()[start,end]
+    json=get_job_posting()[int(start):int(end)]
     output_job_to_excel(json)
+    print(pd.DataFrame(json)['company'])
+
 if __name__=="__main__":
     scrap(1,30)
     
