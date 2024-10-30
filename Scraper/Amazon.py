@@ -2,13 +2,15 @@ from datetime import datetime
 import requests
 import csv
 import bs4
-
+import concurrent.futures
+from tqdm import tqdm
 USER_AGENT='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
 REQUEST_HEADER={
     'User-Agent':USER_AGENT,
     'Accept-Language':'en-US,en;q=0.5',
 
 }
+NO_THREADS=5
 def get_page_html(url):
     res=requests.get(url=url,headers=REQUEST_HEADER)
     return res.content
@@ -36,7 +38,7 @@ def get_product_rating(soup):
     return float(product_rating.get_text(strip=True).strip().split()[0])
 
 
-def extract_product_info(url):
+def extract_product_info(url,output):
     product_info={}
     html=get_page_html(url)
     soup=bs4.BeautifulSoup(html,'lxml')
@@ -44,17 +46,17 @@ def extract_product_info(url):
     product_info['title']=get_product_title(soup)
     product_info['price']=get_product_price(soup)
     product_info['rating']=get_product_rating(soup)
-    print(product_info)
-    return product_info
+    output.append( product_info)
 
 
 if __name__=="__main__":
     product_data=[]
+    urls=[]
     with open("amazon_web.csv",newline='')as csvFile:
-        reader=csv.reader(csvFile,delimiter=',')
-        for row in reader:
-            url=row[0]
-            product_data.append(extract_product_info(url))
+        urls=list(csv.reader(csvFile,delimiter=','))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=NO_THREADS) as executor:
+        for wkn in tqdm(range(0,len(urls))):
+            executor.submit(extract_product_info,urls[wkn][0],product_data)
     output_file='amazon_product_data-{}.csv'.format(
         datetime.today().strftime("%d_%m_%Y")
     )
