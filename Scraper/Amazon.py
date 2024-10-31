@@ -48,8 +48,29 @@ def extract_product_info(url,output):
     product_info['rating']=get_product_rating(soup)
     output.append( product_info)
 
+def get_link_to_file(url):
+    urls=[]
+    html=get_page_html(url)
+    soup=bs4.BeautifulSoup(html,'lxml')
+    link_text=soup.findAll('a',attrs={
+        'class':'a-link-normal s-underline-text s-underline-link-text s-link-style a-text-normal'
+    })
+    for link in link_text:
+        href= link.get('href')
+        if not href.startswith("http"):
+            href = "https://www.amazon.com" + href
+            urls.append(href)
+        else:
+            return None
+    return urls
+    
 
 if __name__=="__main__":
+    links=get_link_to_file('https://www.amazon.com/s?k=gaming&_encoding=UTF8&content-id=amzn1.sym.5b60f7cf-8cdf-42b5-80ee-74f9ab340b5d&pd_rd_r=c9bafa08-d645-4a6c-b184-698f7af4aedc&pd_rd_w=o1viv&pd_rd_wg=Zr42N&pf_rd_p=5b60f7cf-8cdf-42b5-80ee-74f9ab340b5d&pf_rd_r=665N4RS8SPQNT1D7188Y&ref=pd_hp_d_atf_unk')
+    with open("amazon_web.csv", 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        for link in links:
+            writer.writerow([link])
     product_data=[]
     urls=[]
     with open("amazon_web.csv",newline='')as csvFile:
