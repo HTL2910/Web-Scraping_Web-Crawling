@@ -61,7 +61,7 @@ def get_link_to_file(url):
             href = "https://www.amazon.com" + href
             urls.append(href)
         else:
-            return None
+            return ''
     return urls
     
 
