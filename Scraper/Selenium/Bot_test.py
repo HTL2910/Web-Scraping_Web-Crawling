@@ -24,22 +24,39 @@ def login():
     driver.find_element(By.XPATH, value="//a[contains(@href, '/login')]").click()    
     time.sleep(2)
     #nhập user name
-    # username = driver.find_element(By.CSS_SELECTOR, value="input[name='username']")
-    # username.clear()
-    # username.send_keys(credentials["USERNAME"])
-    # time.sleep(2)
-
+    username = driver.find_element(By.CSS_SELECTOR, value="input[name='username']")
+    username.clear()
+    username.send_keys(credentials["USERNAME"])
+    time.sleep(2)
 
     #login with google
-    driver.find_element(By.ID,value='google-auth-button').click()
+    # driver.find_element(By.ID,value='google-auth-button').click()
     # Click nút submit
-    # driver.find_element(By.ID, value="login-submit").click()
+    driver.find_element(By.ID, value="login-submit").click()
     time.sleep(2)
+    #nhập Passwords
+    username = driver.find_element(By.CSS_SELECTOR, value="input[name='password']")
+    username.clear()
+    username.send_keys(credentials["PASSWORD"])
+    time.sleep(2)
+    driver.find_element(By.ID, value="login-submit").click()
+    time.sleep(2)
+
+def screenshot_Page():
+    time.sleep(2)
+    date_str = date.today().strftime("%d-%m-%Y")
+    fpath = os.path.join(os.getcwd(), f'download\{date_str}.png')
+    if not os.path.exists('download'):
+        os.makedirs('download')
+    driver.get_screenshot_as_file(fpath)
+    print(fpath)
+
 def main():
     try:
         # Truy cập trang chủ Trello
         driver.get('https://trello.com')
         login()
+        screenshot_Page()
         input('Bot Operation Completed. Press any key...')
         driver.close()
     except Exception as e:
