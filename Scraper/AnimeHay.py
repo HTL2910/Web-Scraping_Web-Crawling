@@ -28,16 +28,7 @@ def get_link_to_file(url):
 
 def get_name_anime(soup):
     titles=[]
-    movie_ids= soup.findAll('div', id=True)
-    for id in movie_ids:
-        id_title=id.find('a',title=True)
-        if id_title:
-            name_movie_div = id_title.find('div', class_='name-movie')
-            if name_movie_div is not None:
-                name_movie = name_movie_div.text.strip()
-                titles.append(name_movie)
-            else:
-                continue
+    
     title_div = soup.findAll('div', attrs={'class': 'movie-item'})
     for div in title_div:
         title=div.find('a',title=True)
@@ -46,14 +37,7 @@ def get_name_anime(soup):
 
 def get_rating_anime(soup):
     ratings=[]
-    rating_div=soup.findAll('div',id=True)
-    for div in rating_div:
-        div_tmp=div.findAll('div')
-        if(div_tmp):
-            for div_i in div_tmp:
-                rating=div_i.find('div',class_='score')
-                if(rating):
-                    ratings.append(rating.text.strip())
+    
     anime_div = soup.findAll('div', attrs={'class': 'movie-item'})
     for div in anime_div:
         score_div = div.find('div', class_='score')
