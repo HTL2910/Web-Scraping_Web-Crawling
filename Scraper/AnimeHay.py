@@ -1,58 +1,59 @@
-from datetime import datetime
-import requests
-import csv
-import bs4
-import concurrent.futures
-from tqdm import tqdm
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
+import time
+
+# Cấu hình ChromeDriver
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-REQUEST_HEADER = {
-    'User-Agent': USER_AGENT,
-    'Accept-Language': 'en-US,en;q=0.5'
-}
+options = Options()
+options.add_argument('--headless')  # Chạy không hiển thị giao diện
+options.add_argument('--disable-gpu')
+options.add_argument('--no-sandbox')
+options.add_argument('--disable-dev-shm-usage')
+options.add_argument(f'user-agent={USER_AGENT}')
 
-url='https://animehay.de/'
 
+service = Service()
+driver = webdriver.Chrome(service=service, options=options)
 
-def get_page_html(url):
+url = 'https://animehay.de/'
+
+def get_anime_data_with_selenium(url):
+    driver.get(url)
+    time.sleep(3)
+    page_source = driver.page_source
+    soup = BeautifulSoup(page_source, 'html.parser')
+    anime_items = soup.find_all('div', class_='movie-item')
+    animes = {
+        'Name': [],
+        'Rating': []
+    }
+    for item in anime_items:
+        title_tag = item.find('a', title=True)
+        if title_tag:
+            animes['Name'].append(title_tag['title'])
+        score_tag = item.find('div', class_='score')
+        if score_tag:
+            rating = score_tag.text.strip()
+            animes['Rating'].append(rating)
+        else:
+            animes['Rating'].append("N/A")  # Đánh giá trống nếu không tìm thấy
+
+    return animes
+
+if __name__ == "__main__":
     try:
-        res = requests.get(url=url, headers=REQUEST_HEADER)
-        res.raise_for_status()  # Kiểm tra lỗi HTTP
-        return res.content
-    except requests.exceptions.RequestException as e:
-        print(f"Lỗi không thấy nội dung trang: {e}")
-        return None
-def get_link_to_file(url):
-    html=get_page_html(url)
-    soup=bs4.BeautifulSoup(html,'lxml')
-    return soup
-
-def get_name_anime(soup):
-    titles=[]
+        anime_data = get_anime_data_with_selenium(url)
+        for i in range(len(anime_data['Name'])):
+            name = anime_data['Name'][i]
+            rating = anime_data['Rating'][i]
+            print(f"Anime #{i + 1}: Name: {name} - Rating: {rating}")
+            print("###########################")
     
-    title_div = soup.findAll('div', attrs={'class': 'movie-item'})
-    for div in title_div:
-        title=div.find('a',title=True)
-        titles.append(title['title'] )
-    return titles
-
-def get_rating_anime(soup):
-    ratings=[]
+    except Exception as e:
+        print(f"Lỗi: {e}")
     
-    anime_div = soup.findAll('div', attrs={'class': 'movie-item'})
-    for div in anime_div:
-        score_div = div.find('div', class_='score')
-        if score_div:  # Kiểm tra nếu tìm thấy
-            rating = score_div.text.strip()  # Lấy điểm số và loại bỏ khoảng trắng
-            ratings.append(rating)
-    return ratings
-if __name__=="__main__":
-    animes={}
-    soup=get_link_to_file(url)
-    animes['Name']=get_name_anime(soup)
-    animes['Rating']=get_rating_anime(soup)
-  
-    for i in range(len(animes['Name'])):
-        name = animes['Name'][i]
-        rating = animes['Rating'][i]
-        print(f"Anime #{i + 1}: Name: {name} : Rating: {rating}")
-        print("###########################")
+    finally:
+        driver.quit()  
