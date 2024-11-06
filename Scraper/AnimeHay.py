@@ -3,6 +3,8 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
+import csv
+
 
 # Cấu hình ChromeDriver
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -65,11 +67,19 @@ def get_list_anime(url):
         #     print("###########################")
     
     return animes
-if __name__ == "__main__":
-    add=[]   
+def save_data(index_page):
     urls=get_list_url()
-    for url_temp in urls:
-        animes=get_list_anime(url_temp)
-        add.append(animes)
-    print(add)
+    animes={}
+    animes=get_list_anime(urls[index_page])
+    name_file_csv='AnimeHay.csv'
+    with open(name_file_csv, 'a', newline='', encoding='utf-8') as outputFile:
+        writer=csv.writer(outputFile)
+        if(index_page==0):
+            writer.writerow(['Index','Name', 'Rating']) 
+        for i in range(len(animes['Name'])):
+            writer.writerow([i+1+len(animes['Name'])*index_page,animes['Name'][i], animes['Rating'][i]])
     driver.quit()  
+if __name__ == "__main__":
+    index=1
+    save_data(index)
+   
