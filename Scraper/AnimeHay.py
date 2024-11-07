@@ -48,7 +48,7 @@ def get_rating_anime(soup):
             ratings.append("N/A")  
     return ratings
 def get_list_url():
-    count_page=5
+    count_page=100
     urls=[]
     for i in range(count_page):
         url=f'https://animehay.de/phim-moi-cap-nhap/trang-{i}.html'
@@ -80,6 +80,6 @@ def save_data(index_page):
             writer.writerow([i+1+len(animes['Name'])*index_page,animes['Name'][i], animes['Rating'][i]])
     driver.quit()  
 if __name__ == "__main__":
-    index=1
+    index=32
     save_data(index)
    
