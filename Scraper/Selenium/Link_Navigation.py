@@ -6,6 +6,7 @@ import concurrent.futures
 from tqdm import tqdm
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 NO_THREADS=5
 
@@ -25,8 +26,8 @@ def find_element_driver(driver):
 
 def action_link(driver):
     # button=driver.find_element(By.CLASS_NAME,'donate-button')
-    btn=driver.find_element(By.LINK_TEXT,'Downloads')
-
+    # btn=driver.find_element(By.LINK_TEXT,'Downloads')
+    search=driver.find_element(By.ID,'id-search-field')
     action=ActionChains(driver)
     # action.click(on_element=button)
     # action.double_click(on_element=button)
@@ -34,8 +35,12 @@ def action_link(driver):
     # action.release(button)
     # action.move_by_offset(100,10)
     # action.move_to_element(to_element=button)
-    action.move_to_element_with_offset(btn,150,0).click()
+    # action.move_to_element_with_offset(btn,150,0).click()
 
+    # action.key_down('p',search)
+    
+    # action.key_up('a',search)
+    # action.click(search).send_keys('python a')
     action.perform()
 
 def test_navigation_link(url):
