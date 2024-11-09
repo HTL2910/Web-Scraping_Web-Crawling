@@ -41,6 +41,7 @@ def action_link(driver):
     
     # action.key_up('a',search)
     # action.click(search).send_keys('python a')
+    # action.reset_actions()
     action.perform()
 
 def test_navigation_link(url):
