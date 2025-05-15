@@ -26,6 +26,9 @@ from bs4 import BeautifulSoup
 import pandas
 import time
 from selenium.webdriver.common.action_chains import ActionChains
+import os
+from tksheet import Sheet
+
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 options = Options()
@@ -49,7 +52,8 @@ REQUEST_HEADER={
 
 loading_window = None  # Biến toàn cục để giữ cửa sổ loading
 current_df = None  # Đây sẽ là nơi lưu DataFrame sau xử lý
-
+width_member=50
+height_member=50
 def show_loading(message="Đang xử lý..."):
     global loading_window
     loading_window = tk.Toplevel()
@@ -74,63 +78,80 @@ def xu_ly_file():
     tk.Label(file_window, text="Chức năng xử lý file:", font=("Arial", 12, "bold")).pack(pady=10)
 
     # Gộp file Excel
-    tk.Button(file_window, text="Gộp File Excel", width=30, command=lambda: gop_file_excel(sheet_entry.get())).pack(pady=5)
+    tk.Button(file_window, text="Gộp File Excel", width=width_member, command=lambda: gop_file_excel(sheet_entry.get())).pack(pady=5)
     tk.Label(file_window, text="Tên Sheet để gộp (nếu có):").pack()
     sheet_entry = tk.Entry(file_window)
     sheet_entry.pack(pady=3)
 
     # Tách file Excel
-    tk.Button(file_window, text="Tách File theo dòng", width=30, command=lambda: tach_file_theo_dong(int(row_entry.get()))).pack(pady=5)
+    tk.Button(file_window, text="Tách File theo dòng", width=width_member, command=lambda: tach_file_theo_dong(int(row_entry.get()))).pack(pady=5)
     tk.Label(file_window, text="Số dòng mỗi file:").pack()
     row_entry = tk.Entry(file_window)
     row_entry.pack(pady=3)
 
-    tk.Button(file_window, text="Tách File theo cột", width=30, command=lambda: tach_file_theo_cot(col_entry.get())).pack(pady=5)
+    tk.Button(file_window, text="Tách File theo cột", width=width_member, command=lambda: tach_file_theo_cot(col_entry.get())).pack(pady=5)
     tk.Label(file_window, text="Tên cột để tách:").pack()
     col_entry = tk.Entry(file_window)
     col_entry.pack(pady=3)
 
     # Import / Export
-    tk.Button(file_window, text="Import File", width=30, command=import_file).pack(pady=10)
-    tk.Button(file_window, text="Export File Excel", width=30, command=export_file_excel).pack(pady=5)
+    tk.Button(file_window, text="Import File", width=width_member, command=import_file).pack(pady=10)
+    tk.Button(file_window, text="Export File Excel", width=width_member, command=export_file_excel).pack(pady=5)
+def select_file():
+    return filedialog.askopenfilenames(
+        title="Chọn các file dữ liệu",
+        filetypes=[
+            ("Excel/CSV files", "*.xlsx *.xls *.xlsm *.csv"),
+            ("All files", "*.*")
+        ]
+    )
+
 def gop_file_excel(sheet_name=None):
-    files = filedialog.askopenfilenames(title="Chọn các file Excel", filetypes=[("Excel files", "*.xlsx")])
+    files = select_file()
     if not files:
+        messagebox.showwarning("Không có file", "Bạn chưa chọn file nào!")
         return
 
     try:
         show_loading("Đang gộp file...")
-        import pandas as pd
         dfs = []
         for file in files:
-            if sheet_name:
-                df = pd.read_excel(file, sheet_name=sheet_name)
+            ext = os.path.splitext(file)[1].lower()
+            if ext == ".csv":
+                df = pd.read_csv(file)
             else:
-                df = pd.read_excel(file)
+                # với Excel: nếu có sheet_name thì đọc sheet đó, không có thì đọc sheet đầu
+                df = pd.read_excel(file, sheet_name=sheet_name) if sheet_name else pd.read_excel(file)
             dfs.append(df)
 
         merged_df = pd.concat(dfs, ignore_index=True)
-        save_path = filedialog.asksaveasfilename(defaultextension=".xlsx")
+        save_path = filedialog.asksaveasfilename(
+            defaultextension=".xlsx",
+            filetypes=[("Excel files", "*.xlsx")],
+            title="Lưu kết quả (.xlsx)"
+        )
         if save_path:
             merged_df.to_excel(save_path, index=False)
-            hide_loading()
             messagebox.showinfo("Gộp thành công", f"Đã lưu tại:\n{save_path}")
-        else:
-            hide_loading()
+        hide_loading()
     except Exception as e:
         hide_loading()
-        messagebox.showerror("Lỗi", f"Gộp thất bại:\n{str(e)}")
+        messagebox.showerror("Lỗi", f"Gộp thất bại:\n{e}")
 
 def tach_file_theo_dong(so_dong):
-    file = filedialog.askopenfilename(title="Chọn file Excel")
+    file = filedialog.askopenfilename(
+        title="Chọn file Excel",
+        filetypes=[("Excel files", "*.xlsx *.xls *.xlsm"), ("All files", "*.*")]
+    )    
     if not file:
+        messagebox.showerror('Lỗi',"Không có file nào được chọn")
         return
     try:
-        import pandas as pd
         df = pd.read_excel(file)
 
         folder = filedialog.askdirectory(title="Chọn thư mục lưu")
         if not folder:
+            messagebox.showerror('Lỗi',"Không có thư mục nào được chọn")
             return
 
         for i in range(0, len(df), so_dong):
@@ -141,11 +162,14 @@ def tach_file_theo_dong(so_dong):
     except Exception as e:
         messagebox.showerror("Lỗi", str(e))
 def tach_file_theo_cot(col_name):
-    file = filedialog.askopenfilename(title="Chọn file Excel")
+    file = filedialog.askopenfilename(
+        title="Chọn file Excel",
+        filetypes=[("Excel files", "*.xlsx *.xls *.xlsm"), ("All files", "*.*")]
+    )       
     if not file:
+        messagebox.showerror('Lỗi',"Không có file nào được chọn")
         return
     try:
-        import pandas as pd
         df = pd.read_excel(file)
 
         if col_name not in df.columns:
@@ -165,7 +189,10 @@ def tach_file_theo_cot(col_name):
         messagebox.showerror("Lỗi", str(e))
 
 def tach_file_excel():
-    file = filedialog.askopenfilename(title="Chọn file Excel cần tách", filetypes=[("Excel files", "*.xlsx")])
+    file = filedialog.askopenfilename(
+        title="Chọn file Excel cần tách",
+        filetypes=[("Excel files", "*.xlsx *.xls *.xlsm"), ("All files", "*.*")]
+    )
     if not file:
         return
 
@@ -186,7 +213,10 @@ def tach_file_excel():
     except Exception as e:
         messagebox.showerror("Lỗi", f"Tách file thất bại:\n{str(e)}")
 def import_file():
-    file_path = filedialog.askopenfilename(title="Chọn file để import", filetypes=[("Excel files", "*.xlsx")])
+    file_path = filedialog.askopenfilename(
+        title="Chọn file để import",
+        filetypes=[("Excel files", "*.xlsx *.xls *.xlsm"), ("All files", "*.*")]
+    )
     if not file_path:
         return
 
@@ -234,7 +264,11 @@ def export_file_excel():
         messagebox.showwarning("Không có dữ liệu", "Chưa có dữ liệu để export.")
         return
 
-    file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", filetypes=[("Excel files", "*.xlsx")])
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".xlsx",
+        filetypes=[("Excel files", "*.xlsx")],  # lưu luôn dưới dạng .xlsx
+        title="Lưu kết quả (.xlsx)"
+    )
     if file_path:
         try:
             show_loading("Đang xuất dữ liệu...")
@@ -434,7 +468,123 @@ def get_data_from_web(base_url, index):
     return data_web
 
 def translate_data():
-    messagebox.showinfo("Translate", "Chức năng Translate đang được xử lý...")
+    file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx *.xls"), ("CSV files", "*.csv")])
+    if not file_path:
+        messagebox.showerror("Lỗi", "Không có file được chọn.")
+        return
+
+    try:
+        if file_path.endswith(".csv"):
+            df = pd.read_csv(file_path)
+        else:
+            df = pd.read_excel(file_path)
+    except Exception as e:
+        messagebox.showerror("Lỗi đọc file", str(e))
+        return
+
+    # Khởi tạo giao diện xử lý dữ liệu
+    window = tk.Toplevel()
+    window.title("Translate Data")
+    window.geometry("1200x600")
+
+    original_df = df.copy()
+    result_df = df.copy()
+
+    selected_column = tk.StringVar()
+    split_direction = tk.StringVar(value="before")
+    index_var = tk.IntVar(value=1)
+
+    # --- Step 2: Chọn cột ---
+    frame_buttons = tk.Frame(window)
+    frame_buttons.pack(pady=10, fill="x")
+
+    tk.Label(frame_buttons, text="Chọn cột làm FullName:").pack(anchor="w")
+
+    for col in df.columns:
+        btn = tk.Radiobutton(frame_buttons, text=col, variable=selected_column, value=col)
+        btn.pack(side="left")
+
+    # --- Step 3: Các tuỳ chọn phân tách ---
+    options_frame = tk.Frame(window)
+    options_frame.pack(pady=10)
+
+    tk.Label(options_frame, text="Brand:").grid(row=0, column=0, padx=5)
+    tk.Entry(options_frame, textvariable=index_var, width=5).grid(row=0, column=1, padx=5)
+
+    tk.Radiobutton(options_frame, text="Trước", variable=split_direction, value="before").grid(row=0, column=2)
+    tk.Radiobutton(options_frame, text="Sau", variable=split_direction, value="after").grid(row=0, column=3)
+
+    # --- Treeview with Scrollbars ---
+    tree_frame = tk.Frame(window)
+    tree_frame.pack(fill="both", expand=True)
+
+    x_scroll = tk.Scrollbar(tree_frame, orient="horizontal")
+    y_scroll = tk.Scrollbar(tree_frame, orient="vertical")
+
+    tree = ttk.Treeview(tree_frame, xscrollcommand=x_scroll.set, yscrollcommand=y_scroll.set)
+    x_scroll.config(command=tree.xview)
+    y_scroll.config(command=tree.yview)
+
+    x_scroll.pack(side="bottom", fill="x")
+    y_scroll.pack(side="right", fill="y")
+    tree.pack(fill="both", expand=True)
+
+    def show_preview():
+        nonlocal result_df
+        col = selected_column.get()
+        idx = index_var.get()
+        if col == "":
+            messagebox.showwarning("Cảnh báo", "Bạn chưa chọn cột FullName.")
+            return
+
+        def extract_brand(val):
+            try:
+                parts = str(val).split()
+                if split_direction.get() == "before":
+                    return " ".join(parts[:idx])
+                else:
+                    return " ".join(parts[-idx:])
+            except Exception:
+                return ""
+
+        result_df["Brand"] = result_df[col].apply(extract_brand)
+        update_treeview(result_df)
+
+    def update_treeview(df_view):
+        tree.delete(*tree.get_children())
+        tree["columns"] = list(df_view.columns)
+        tree["show"] = "headings"
+        for col in df_view.columns:
+            tree.heading(col, text=col)
+            tree.column(col, width=150, anchor="w")
+        for _, row in df_view.iterrows():
+            tree.insert("", "end", values=list(row))
+
+    def undo_changes():
+        nonlocal result_df
+        result_df = original_df.copy()
+        update_treeview(result_df)
+
+    def save_result():
+        file_out = filedialog.asksaveasfilename(defaultextension=".xlsx",
+                                                filetypes=[("Excel file", "*.xlsx")])
+        if not file_out:
+            return
+        try:
+            result_df.to_excel(file_out, index=False)
+            messagebox.showinfo("Thành công", f"Đã lưu file: {file_out}")
+        except Exception as e:
+            messagebox.showerror("Lỗi lưu file", str(e))
+
+    # --- Các nút thao tác ---
+    btn_frame = tk.Frame(window)
+    btn_frame.pack(pady=10)
+
+    tk.Button(btn_frame, text="Preview", command=show_preview).pack(side="left", padx=5)
+    tk.Button(btn_frame, text="Undo", command=undo_changes).pack(side="left", padx=5)
+    tk.Button(btn_frame, text="Lưu kết quả", command=save_result).pack(side="left", padx=5)
+
+    update_treeview(result_df)
 
 def up_part():
     messagebox.showinfo("Up Part", "Chức năng Up Part đang được xử lý...")
